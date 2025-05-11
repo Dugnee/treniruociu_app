@@ -1,20 +1,16 @@
-// main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'LoginScreen.dart';
-import 'workouts_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
+import 'LoginScreen.dart';
+import 'workouts_screen.dart';
+import 'settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (e) {
-    print('Firebase initialization error: $e');
-  }
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(FitnessTrackerApp());
 }
 
@@ -27,61 +23,52 @@ class FitnessTrackerApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
         scaffoldBackgroundColor: Colors.white,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: FutureBuilder(
-        future: Firebase.initializeApp(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return Scaffold(
-              body: Center(
-                child: Text('Klaida: ${snapshot.error}'),
-              ),
+              body: Center(child: CircularProgressIndicator()),
             );
           }
-
-          if (snapshot.connectionState == ConnectionState.done) {
-            return StreamBuilder<User?>(
-              stream: FirebaseAuth.instance.authStateChanges(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (snapshot.hasData) {
-                  return HomeScreen();
-                }
-                return LoginScreen();
-              },
-            );
+          if (snapshot.hasData) {
+            return HomeScreen();
           }
-
-          return Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
+          return LoginScreen();
         },
       ),
     );
   }
 }
 
-
 class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Treniruočių Sekimas')),
-      body: GridView.count(
-        padding: EdgeInsets.all(20),
-        crossAxisCount: 2,
-        children: [
-          _buildCard(context, 'Treniruotės', Icons.fitness_center, WorkoutsScreen()),
-          _buildCard(context, 'Istorija', Icons.history, HistoryScreen()),
-          _buildCard(context, 'Žingsniai', Icons.directions_walk, StepsScreen()),
-          _buildCard(context, 'Nustatymai', Icons.settings, SettingsScreen()),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 600;
+          return Center(
+            child: Container(
+              width: isWide ? 600 : double.infinity,
+              padding: EdgeInsets.all(20),
+              child: GridView.count(
+                crossAxisCount: isWide ? 2 : 1,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                children: [
+                  _buildCard(context, 'Treniruotės', Icons.fitness_center, WorkoutsScreen()),
+                  _buildCard(context, 'Istorija', Icons.history, HistoryScreen()),
+                  _buildCard(context, 'Žingsniai', Icons.directions_walk, StepsScreen()),
+                  _buildCard(context, 'Nustatymai', Icons.settings, SettingsScreen()),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -95,13 +82,20 @@ class HomeScreen extends StatelessWidget {
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48, color: Colors.purple),
-            SizedBox(height: 10),
-            Text(title, style: TextStyle(fontSize: 18)),
-          ],
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 48, color: Colors.purple),
+              SizedBox(height: 10),
+              Text(
+                title,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
