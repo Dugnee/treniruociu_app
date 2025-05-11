@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "246290805231",
+    "project_id": "treniruociuapp",
+    "storage_bucket": "treniruociuapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:246290805231:android:ff6ae3f48add2908e7461a",
+        "android_client_info": {
+          "package_name": "com.example.treniruociu_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "246290805231-3180uc9nr0n5hjdvam518a7i5r5b58n8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.treniruociu_app",
+            "certificate_hash": "e11fa89dd9c6a262c4615cdf4e41809e2c25d9ba"
+          }
+        },
+        {
+          "client_id": "246290805231-ccrpri836bu79du830p5sa9biv5tag1g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOZI41h9Km6SroLjQA2Qq2yes5SSLkjHM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "246290805231-ccrpri836bu79du830p5sa9biv5tag1g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
