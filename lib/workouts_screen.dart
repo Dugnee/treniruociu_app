@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class WorkoutsScreen extends StatefulWidget {
   @override
@@ -79,7 +80,18 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
     final aktyviosDienosPratimai = _savaitesPratimai[_aktyviDiena]!;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Tavo treniruotės')), 
+      appBar: AppBar(
+        title: Text('Tavo treniruotės'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            tooltip: 'Atsijungti',
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+            },
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Container(

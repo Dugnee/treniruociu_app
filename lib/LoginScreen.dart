@@ -30,9 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await FirebaseAuth.instance.signInWithCredential(credential);
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => WorkoutsScreen()),
-      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       setState(() => _kraunama = false);
       ScaffoldMessenger.of(context).showSnackBar(
