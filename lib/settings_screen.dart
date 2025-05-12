@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -14,12 +15,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _saving = false;
   String? _photoUrl;
   User? _user;
+  bool _isWeb = kIsWeb;
 
   @override
   void initState() {
     super.initState();
     _user = FirebaseAuth.instance.currentUser;
-    print('DEBUG: Firebase user: \\${_user?.uid} displayName=\\${_user?.displayName} photoURL=\\${_user?.photoURL}');
+    print('DEBUG: Firebase user: ${_user?.uid} displayName=${_user?.displayName} photoURL=${_user?.photoURL}');
     _photoUrl = _user?.photoURL;
     _loadUserName();
   }
@@ -62,68 +64,116 @@ class _SettingsScreenState extends State<SettingsScreen> {
         body: Center(child: Text('Vartotojas neprisijungęs')),
       );
     }
+
     return Scaffold(
-      appBar: AppBar(title: Text('Nustatymai')),
-      body: ListView(
-        children: [
-          SizedBox(height: 24),
-          Center(
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 48,
-                  backgroundImage: (_photoUrl != null && _photoUrl!.isNotEmpty)
-                      ? NetworkImage(_photoUrl!)
-                      : null,
-                  child: (_photoUrl == null || _photoUrl!.isEmpty)
-                      ? Icon(Icons.person, size: 48)
-                      : null,
+      appBar: AppBar(
+        title: Text('Nustatymai'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            tooltip: 'Atsijungti',
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(height: 24),
+              Center(
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 48,
+                      backgroundImage: (_photoUrl != null && _photoUrl!.isNotEmpty)
+                          ? NetworkImage(_photoUrl!)
+                          : null,
+                      child: (_photoUrl == null || _photoUrl!.isEmpty)
+                          ? Icon(Icons.person, size: 48)
+                          : null,
+                    ),
+                    SizedBox(height: 16),
+                    SizedBox(
+                      width: 220,
+                      child: TextField(
+                        controller: _nameController,
+                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          labelText: 'Vardas',
+                          border: OutlineInputBorder(),
+                          hintText: 'Nežinomas vartotojas',
+                        ),
+                      ),
+                    ),
+                    if (_nameController.text.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text('Vardas nerastas', style: TextStyle(color: Colors.red)),
+                      ),
+                    SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _saving ? null : _saveUserName,
+                      child: _saving ? CircularProgressIndicator() : Text('Išsaugoti'),
+                    ),
+                  ],
                 ),
+              ),
+              Divider(height: 32),
+              Card(
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: Text('Tamsi tema'),
+                      value: _darkTheme,
+                      onChanged: (val) {
+                        setState(() => _darkTheme = val);
+                        // Čia gali pridėti temų keitimo logiką visam app
+                      },
+                    ),
+                    SwitchListTile(
+                      title: Text('Pranešimai'),
+                      value: _notifications,
+                      onChanged: (val) {
+                        setState(() => _notifications = val);
+                        // Čia gali pridėti pranešimų valdymo logiką
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              if (_isWeb) ...[
                 SizedBox(height: 16),
-                SizedBox(
-                  width: 220,
-                  child: TextField(
-                    controller: _nameController,
-                    textAlign: TextAlign.center,
-                    decoration: InputDecoration(
-                      labelText: 'Vardas',
-                      border: OutlineInputBorder(),
-                      hintText: 'Nežinomas vartotojas',
+                Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Web versijos informacija',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Ši aplikacija veikia web naršyklėje. Kai kurios funkcijos gali būti ribotos arba neveikti taip, kaip mobiliuose įrenginiuose.',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                if (_nameController.text.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text('Vardas nerastas', style: TextStyle(color: Colors.red)),
-                  ),
-                SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: _saving ? null : _saveUserName,
-                  child: _saving ? CircularProgressIndicator() : Text('Išsaugoti'),
-                ),
               ],
-            ),
+            ],
           ),
-          Divider(height: 32),
-          SwitchListTile(
-            title: Text('Tamsi tema'),
-            value: _darkTheme,
-            onChanged: (val) {
-              setState(() => _darkTheme = val);
-              // Čia gali pridėti temų keitimo logiką visam app
-            },
-          ),
-          SwitchListTile(
-            title: Text('Pranešimai'),
-            value: _notifications,
-            onChanged: (val) {
-              setState(() => _notifications = val);
-              // Čia gali pridėti pranešimų valdymo logiką
-            },
-          ),
-          // Gali pridėti daugiau nustatymų čia
-        ],
+        ),
       ),
     );
   }

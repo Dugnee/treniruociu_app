@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'LoginScreen.dart';
 import 'workouts_screen.dart';
 import 'settings_screen.dart';
+import 'steps_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
