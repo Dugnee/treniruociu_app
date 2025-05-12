@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'main.dart';
+import 'package:intl/intl.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -9,7 +11,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _darkTheme = false;
   bool _notifications = true;
   final _nameController = TextEditingController();
   bool _saving = false;
@@ -21,7 +22,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _user = FirebaseAuth.instance.currentUser;
-    print('DEBUG: Firebase user: ${_user?.uid} displayName=${_user?.displayName} photoURL=${_user?.photoURL}');
     _photoUrl = _user?.photoURL;
     _loadUserName();
   }
@@ -54,6 +54,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }, SetOptions(merge: true));
     setState(() => _saving = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vardas išsaugotas!')));
+  }
+
+  Widget _buildAchievements() {
+    if (_user == null) return SizedBox.shrink();
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('achievements')
+          .orderBy('completedAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Text('Pasiekimų dar nėra', style: TextStyle(color: Colors.grey)),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+              child: Text('Pasiekimai', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            ...snapshot.data!.docs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final date = (data['completedAt'] as Timestamp).toDate();
+              return Card(
+                color: Colors.amber.shade50,
+                margin: EdgeInsets.symmetric(vertical: 6),
+                child: ListTile(
+                  leading: Text('🏅', style: TextStyle(fontSize: 32)),
+                  title: Text(data['name'] ?? '', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('Įvykdyta: ${DateFormat('yyyy-MM-dd').format(date)}'),
+                  trailing: Text('${data['period']} d.', style: TextStyle(fontSize: 16)),
+                ),
+              );
+            }).toList(),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -129,10 +175,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     SwitchListTile(
                       title: Text('Tamsi tema'),
-                      value: _darkTheme,
+                      value: themeNotifier.value == ThemeMode.dark,
                       onChanged: (val) {
-                        setState(() => _darkTheme = val);
-                        // Čia gali pridėti temų keitimo logiką visam app
+                        setState(() {
+                          themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+                        });
                       },
                     ),
                     SwitchListTile(
@@ -140,12 +187,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       value: _notifications,
                       onChanged: (val) {
                         setState(() => _notifications = val);
-                        // Čia gali pridėti pranešimų valdymo logiką
                       },
                     ),
                   ],
                 ),
               ),
+              _buildAchievements(),
               if (_isWeb) ...[
                 SizedBox(height: 16),
                 Card(

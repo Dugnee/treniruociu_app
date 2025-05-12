@@ -3,6 +3,7 @@ import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'steps_screen.dart';
 
 class StepsScreen extends StatefulWidget {
   @override
@@ -16,6 +17,7 @@ class _StepsScreenState extends State<StepsScreen> {
   int _steps = 0;
   bool _isListening = false;
   bool _isWeb = kIsWeb;
+  static const int _goalSteps = 10000;
 
   @override
   void initState() {
@@ -165,6 +167,15 @@ class _StepsScreenState extends State<StepsScreen> {
                   onPressed: _initPlatformState,
                   child: Text('Pradėti žingsnių sekimą'),
                 ),
+              if (_status == 'Permission denied')
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Reikalingas leidimas žingsnių sekimui! Prašome suteikti leidimą per telefono nustatymus.',
+                    style: TextStyle(color: Colors.red, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               if (_isListening) ...[
                 Icon(
                   Icons.directions_walk,
@@ -179,6 +190,18 @@ class _StepsScreenState extends State<StepsScreen> {
                 Text(
                   '$_steps',
                   style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 20),
+                LinearProgressIndicator(
+                  value: (_steps / _goalSteps).clamp(0.0, 1.0),
+                  minHeight: 12,
+                  backgroundColor: Colors.purple.shade100,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Tikslas: $_goalSteps žingsnių',
+                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                 ),
                 SizedBox(height: 20),
                 Text(

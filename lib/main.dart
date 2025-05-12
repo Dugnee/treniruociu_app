@@ -6,6 +6,10 @@ import 'LoginScreen.dart';
 import 'workouts_screen.dart';
 import 'settings_screen.dart';
 import 'steps_screen.dart';
+import 'friends_challenges_screen.dart';
+import 'progress_journal_screen.dart';
+
+final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,28 +22,41 @@ void main() async {
 class FitnessTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Treniruočių Sekimas',
-      theme: ThemeData(
-        primarySwatch: Colors.purple,
-        scaffoldBackgroundColor: Colors.white,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          if (snapshot.hasData) {
-            return HomeScreen();
-          }
-          return LoginScreen();
-        },
-      ),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Treniruočių Sekimas',
+          theme: ThemeData(
+            primarySwatch: Colors.purple,
+            scaffoldBackgroundColor: Colors.white,
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            brightness: Brightness.light,
+          ),
+          darkTheme: ThemeData(
+            primarySwatch: Colors.purple,
+            scaffoldBackgroundColor: Colors.black,
+            visualDensity: VisualDensity.adaptivePlatformDensity,
+            brightness: Brightness.dark,
+          ),
+          themeMode: mode,
+          home: StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasData) {
+                return HomeScreen();
+              }
+              return LoginScreen();
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -62,8 +79,9 @@ class HomeScreen extends StatelessWidget {
                 mainAxisSpacing: 16,
                 children: [
                   _buildCard(context, 'Treniruotės', Icons.fitness_center, WorkoutsScreen()),
-                  _buildCard(context, 'Istorija', Icons.history, HistoryScreen()),
+                  _buildCard(context, 'Progreso žurnalas', Icons.history, ProgressJournalScreen()),
                   _buildCard(context, 'Žingsniai', Icons.directions_walk, StepsScreen()),
+                  _buildCard(context, 'Draugų iššūkiai', Icons.group, FriendsChallengesScreen()),
                   _buildCard(context, 'Nustatymai', Icons.settings, SettingsScreen()),
                 ],
               ),
