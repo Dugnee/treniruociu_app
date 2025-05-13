@@ -3,7 +3,9 @@ import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'steps_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class StepsScreen extends StatefulWidget {
   @override
@@ -13,30 +15,88 @@ class StepsScreen extends StatefulWidget {
 class _StepsScreenState extends State<StepsScreen> {
   late Stream<StepCount>? _stepCountStream;
   late Stream<PedestrianStatus>? _pedestrianStatusStream;
-  String _status = 'Unknown';
+  String _status = 'Neaktyvus';
   int _steps = 0;
+  int _todaySteps = 0;
   bool _isListening = false;
   bool _isWeb = kIsWeb;
   static const int _goalSteps = 10000;
+  late DateTime _lastUpdate;
+  Timer? _saveTimer;
+  final _firestore = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
     super.initState();
+    _lastUpdate = DateTime.now();
     if (!_isWeb) {
       _initPlatformState();
+    }
+    _loadTodaySteps();
+  }
+
+  @override
+  void dispose() {
+    _saveTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadTodaySteps() async {
+    if (_auth.currentUser == null) return;
+    
+    final today = DateTime.now();
+    final startOfDay = DateTime(today.year, today.month, today.day);
+    
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('steps')
+          .doc(DateFormat('yyyy-MM-dd').format(startOfDay))
+          .get();
+
+      if (doc.exists) {
+        setState(() {
+          _todaySteps = doc.data()?['steps'] ?? 0;
+          _steps = _todaySteps;
+        });
+      }
+    } catch (e) {
+      print('Klaida kraunant žingsnius: $e');
+    }
+  }
+
+  Future<void> _saveSteps() async {
+    if (_auth.currentUser == null) return;
+    
+    final today = DateTime.now();
+    final startOfDay = DateTime(today.year, today.month, today.day);
+    
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('steps')
+          .doc(DateFormat('yyyy-MM-dd').format(startOfDay))
+          .set({
+        'steps': _steps,
+        'lastUpdate': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Klaida išsaugant žingsnius: $e');
     }
   }
 
   Future<void> _initPlatformState() async {
     if (_isWeb) return;
     
-    // Request activity recognition permission
     var status = await Permission.activityRecognition.request();
     if (status.isGranted) {
       _initPedometer();
     } else {
       setState(() {
-        _status = 'Permission denied';
+        _status = 'Nėra leidimo';
       });
     }
   }
@@ -56,12 +116,26 @@ class _StepsScreenState extends State<StepsScreen> {
     setState(() {
       _isListening = true;
     });
+
+    // Automatiškai išsaugoti žingsnius kas 5 minutes
+    _saveTimer = Timer.periodic(Duration(minutes: 5), (timer) {
+      if (_isListening) {
+        _saveSteps();
+      }
+    });
   }
 
   void onStepCount(StepCount event) {
     setState(() {
       _steps = event.steps;
+      _todaySteps = _steps;
     });
+    
+    // Išsaugoti žingsnius, jei praėjo bent 1 minutė nuo paskutinio išsaugojimo
+    if (DateTime.now().difference(_lastUpdate).inMinutes >= 1) {
+      _saveSteps();
+      _lastUpdate = DateTime.now();
+    }
   }
 
   void onPedestrianStatusChanged(PedestrianStatus event) {
@@ -72,7 +146,7 @@ class _StepsScreenState extends State<StepsScreen> {
 
   void onPedestrianStatusError(error) {
     setState(() {
-      _status = 'Pedestrian Status not available';
+      _status = 'Klaida gavus būseną';
     });
   }
 
@@ -82,19 +156,23 @@ class _StepsScreenState extends State<StepsScreen> {
     });
   }
 
-  // Simulated step counting for web
   void _startWebStepCounting() {
     setState(() {
       _isListening = true;
-      _status = 'Walking';
+      _status = 'Vaikšto';
     });
     
-    // Simulate step counting
     Timer.periodic(Duration(seconds: 1), (timer) {
       if (_isListening) {
         setState(() {
           _steps += 1;
+          _todaySteps = _steps;
         });
+        
+        if (DateTime.now().difference(_lastUpdate).inMinutes >= 1) {
+          _saveSteps();
+          _lastUpdate = DateTime.now();
+        }
       } else {
         timer.cancel();
       }
@@ -104,8 +182,9 @@ class _StepsScreenState extends State<StepsScreen> {
   void _stopStepCounting() {
     setState(() {
       _isListening = false;
-      _status = 'Stopped';
+      _status = 'Sustabdytas';
     });
+    _saveSteps();
   }
 
   @override
@@ -167,7 +246,7 @@ class _StepsScreenState extends State<StepsScreen> {
                   onPressed: _initPlatformState,
                   child: Text('Pradėti žingsnių sekimą'),
                 ),
-              if (_status == 'Permission denied')
+              if (_status == 'Nėra leidimo')
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Text(

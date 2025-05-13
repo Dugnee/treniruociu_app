@@ -35,7 +35,7 @@ class WorkoutsScreen extends StatefulWidget {
   _WorkoutsScreenState createState() => _WorkoutsScreenState();
 }
 
-class _WorkoutsScreenState extends State<WorkoutsScreen> {
+class _WorkoutsScreenState extends State<WorkoutsScreen> with SingleTickerProviderStateMixin {
   final Map<String, List<Pratimas>> _savaitesPratimai = {
     'Pirmadienis': [],
     'Antradienis': [],
@@ -54,11 +54,29 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
   final _firestore = FirebaseFirestore.instance;
   final _uid = FirebaseAuth.instance.currentUser?.uid;
   bool _kraunama = true;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOut,
+      ),
+    );
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -76,7 +94,10 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
         _savaitesPratimai[diena] = pratimai;
       });
     }
-    if (mounted) setState(() => _kraunama = false);
+    if (mounted) {
+      setState(() => _kraunama = false);
+      _animationController.forward();
+    }
   }
 
   Future<void> _saveData() async {
@@ -119,8 +140,8 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
         content: Wrap(
           spacing: 10,
           children: Colors.primaries.map((color) {
-            return GestureDetector(
-              onTap: () => Navigator.of(context).pop(color),
+            return ScaleButton(
+              onPressed: () => Navigator.of(context).pop(color),
               child: Container(
                 width: 30,
                 height: 30,
@@ -168,8 +189,20 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Atšaukti')),
-          ElevatedButton(onPressed: _pridetiPratima, child: Text('Pridėti')),
+          ScaleButton(
+            onPressed: () => Navigator.pop(context),
+            child: TextButton(
+              onPressed: null,
+              child: Text('Atšaukti'),
+            ),
+          ),
+          ScaleButton(
+            onPressed: _pridetiPratima,
+            child: ElevatedButton(
+              onPressed: null,
+              child: Text('Pridėti'),
+            ),
+          ),
         ],
       ),
     );
@@ -190,12 +223,15 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
       appBar: AppBar(
         title: Text('Tavo treniruotės'),
         actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            tooltip: 'Atsijungti',
+          ScaleButton(
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
             },
+            child: IconButton(
+              icon: Icon(Icons.logout),
+              tooltip: 'Atsijungti',
+              onPressed: null,
+            ),
           ),
         ],
       ),
@@ -210,8 +246,8 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
               itemBuilder: (context, index) {
                 final diena = dienos[index];
                 final aktyvi = diena == _aktyviDiena;
-                return GestureDetector(
-                  onTap: () => setState(() => _aktyviDiena = diena),
+                return ScaleButton(
+                  onPressed: () => setState(() => _aktyviDiena = diena),
                   child: Container(
                     margin: EdgeInsets.symmetric(horizontal: 6),
                     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -256,88 +292,112 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                     },
                     itemBuilder: (context, index) {
                       final pratimas = aktyviosDienosPratimai[index];
-                      return Dismissible(
-                        key: ValueKey('${_aktyviDiena}_${pratimas.pavadinimas}_$index'),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: EdgeInsets.only(right: 20),
-                          color: Colors.red,
-                          child: Icon(Icons.delete, color: Colors.white),
+                      final itemKey = Key('${_aktyviDiena}_${pratimas.pavadinimas}_${pratimas.setai}_${pratimas.pakartojimai}_$index');
+                      final slideTween = Tween<Offset>(
+                        begin: index % 2 == 0 ? Offset(-1.0, 0.0) : Offset(1.0, 0.0),
+                        end: Offset.zero,
+                      );
+                      final slideAnimation = slideTween.animate(
+                        CurvedAnimation(
+                          parent: _animationController,
+                          curve: Curves.easeOutCubic,
                         ),
-                        onDismissed: (direction) {
-                          final istrintasPratimas = pratimas;
-                          final istrintoIndexas = index;
-                          setState(() {
-                            aktyviosDienosPratimai.removeAt(index);
-                          });
-                          _saveData();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Pratimas ištrintas'),
-                              action: SnackBarAction(
-                                label: 'Atšaukti',
-                                onPressed: () {
-                                  setState(() {
-                                    aktyviosDienosPratimai.insert(
-                                      istrintoIndexas > aktyviosDienosPratimai.length
-                                        ? aktyviosDienosPratimai.length
-                                        : istrintoIndexas,
-                                      istrintasPratimas,
-                                    );
-                                  });
-                                  _saveData();
-                                },
-                              ),
+                      );
+                      return SlideTransition(
+                        key: itemKey,
+                        position: slideAnimation,
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Dismissible(
+                            key: itemKey,
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: EdgeInsets.only(right: 20),
+                              color: Colors.red,
+                              child: Icon(Icons.delete, color: Colors.white),
                             ),
-                          );
-                        },
-                        child: Card(
-                          color: pratimas.spalva.withOpacity(0.2),
-                          elevation: 3,
-                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                          child: ListTile(
-                            title: Text(pratimas.pavadinimas),
-                            subtitle: Text('${pratimas.setai} setai × ${pratimas.pakartojimai} kartai'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.color_lens, color: pratimas.spalva),
-                                  onPressed: () => _pasirinktiSpalva(index),
+                            onDismissed: (direction) {
+                              final istrintasPratimas = pratimas;
+                              final istrintoIndexas = index;
+                              setState(() {
+                                aktyviosDienosPratimai.removeAt(index);
+                              });
+                              _saveData();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Pratimas ištrintas'),
+                                  action: SnackBarAction(
+                                    label: 'Atšaukti',
+                                    onPressed: () {
+                                      setState(() {
+                                        aktyviosDienosPratimai.insert(
+                                          istrintoIndexas > aktyviosDienosPratimai.length
+                                            ? aktyviosDienosPratimai.length
+                                            : istrintoIndexas,
+                                          istrintasPratimas,
+                                        );
+                                      });
+                                      _saveData();
+                                    },
+                                  ),
                                 ),
-                                IconButton(
-                                  icon: Icon(Icons.delete, color: Colors.red),
-                                  tooltip: 'Ištrinti',
-                                  onPressed: () {
-                                    final istrintasPratimas = pratimas;
-                                    final istrintoIndexas = index;
-                                    setState(() {
-                                      aktyviosDienosPratimai.removeAt(index);
-                                    });
-                                    _saveData();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Pratimas ištrintas'),
-                                        action: SnackBarAction(
-                                          label: 'Atšaukti',
-                                          onPressed: () {
-                                            setState(() {
-                                              aktyviosDienosPratimai.insert(
-                                                istrintoIndexas > aktyviosDienosPratimai.length
-                                                  ? aktyviosDienosPratimai.length
-                                                  : istrintoIndexas,
-                                                istrintasPratimas,
-                                              );
-                                            });
-                                            _saveData();
-                                          },
-                                        ),
+                              );
+                            },
+                            child: Card(
+                              color: pratimas.spalva.withOpacity(0.2),
+                              elevation: 3,
+                              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                              child: ListTile(
+                                title: Text(pratimas.pavadinimas),
+                                subtitle: Text('${pratimas.setai} setai × ${pratimas.pakartojimai} kartai'),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ScaleButton(
+                                      onPressed: () => _pasirinktiSpalva(index),
+                                      child: IconButton(
+                                        icon: Icon(Icons.color_lens, color: pratimas.spalva),
+                                        onPressed: null,
                                       ),
-                                    );
-                                  },
+                                    ),
+                                    ScaleButton(
+                                      onPressed: () {
+                                        final istrintasPratimas = pratimas;
+                                        final istrintoIndexas = index;
+                                        setState(() {
+                                          aktyviosDienosPratimai.removeAt(index);
+                                        });
+                                        _saveData();
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Pratimas ištrintas'),
+                                            action: SnackBarAction(
+                                              label: 'Atšaukti',
+                                              onPressed: () {
+                                                setState(() {
+                                                  aktyviosDienosPratimai.insert(
+                                                    istrintoIndexas > aktyviosDienosPratimai.length
+                                                      ? aktyviosDienosPratimai.length
+                                                      : istrintoIndexas,
+                                                    istrintasPratimas,
+                                                  );
+                                                });
+                                                _saveData();
+                                              },
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: IconButton(
+                                        icon: Icon(Icons.delete, color: Colors.red),
+                                        tooltip: 'Ištrinti',
+                                        onPressed: null,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -347,11 +407,79 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: ScaleButton(
         onPressed: _rodytiDialogaPrideti,
-        icon: Icon(Icons.add),
-        label: Text('Pratimas'),
-        backgroundColor: Colors.purple,
+        child: FloatingActionButton.extended(
+          onPressed: null,
+          icon: Icon(Icons.add),
+          label: Text('Pratimas'),
+          backgroundColor: Colors.purple,
+        ),
+      ),
+    );
+  }
+}
+
+class ScaleButton extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onPressed;
+
+  ScaleButton({
+    required this.child,
+    required this.onPressed,
+  });
+
+  @override
+  _ScaleButtonState createState() => _ScaleButtonState();
+}
+
+class _ScaleButtonState extends State<ScaleButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    _controller.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    _controller.reverse();
+  }
+
+  void _onTapCancel() {
+    _controller.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      onTap: widget.onPressed,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: widget.child,
       ),
     );
   }
