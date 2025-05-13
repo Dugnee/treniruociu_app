@@ -32,6 +32,7 @@ class FriendsChallengesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFA591E2),
       appBar: AppBar(title: Text('Draugų iššūkiai')),
       body: ListView.separated(
         padding: EdgeInsets.all(16),

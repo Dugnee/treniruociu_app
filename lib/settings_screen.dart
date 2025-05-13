@@ -185,6 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     return Scaffold(
+      backgroundColor: Color(0xFFA591E2),
       appBar: AppBar(
         title: Text('Nustatymai'),
         actions: [

@@ -122,6 +122,7 @@ class _ChallengeCalendarScreenState extends State<ChallengeCalendarScreen> {
     int columns = 7;
     int rows = (period / columns).ceil();
     return Scaffold(
+      backgroundColor: Color(0xFFA591E2),
       appBar: AppBar(title: Text('$icon $name')),
       body: Stack(
         children: [

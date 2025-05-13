@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Ši programėlė naudoja jūsų buvimo vietą maršruto sekimui.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Ši programėlė naudoja jūsų buvimo vietą maršruto sekimui net kai programa veikia fone.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Ši programėlė naudoja jūsų buvimo vietą maršruto sekimui.</string>
 </dict>
 </plist>

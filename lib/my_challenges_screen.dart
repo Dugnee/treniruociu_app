@@ -114,6 +114,7 @@ class _MyChallengesScreenState extends State<MyChallengesScreen> {
       );
     }
     return Scaffold(
+      backgroundColor: Color(0xFFA591E2),
       appBar: AppBar(title: Text('Mano iššūkiai')),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateDialog,

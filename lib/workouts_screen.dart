@@ -220,6 +220,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> with SingleTickerProvid
     }
 
     return Scaffold(
+      backgroundColor: Color(0xFFA591E2),
       appBar: AppBar(
         title: Text('Tavo treniruotės'),
         actions: [

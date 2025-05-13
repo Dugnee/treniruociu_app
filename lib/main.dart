@@ -27,16 +27,16 @@ class FitnessTrackerApp extends StatelessWidget {
       builder: (context, mode, _) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'Treniruočių Sekimas',
+          title: 'Treniruokis',
           theme: ThemeData(
             primarySwatch: Colors.purple,
-            scaffoldBackgroundColor: Colors.white,
+            scaffoldBackgroundColor: Color(0xFFA591E2),
             visualDensity: VisualDensity.adaptivePlatformDensity,
             brightness: Brightness.light,
           ),
           darkTheme: ThemeData(
             primarySwatch: Colors.purple,
-            scaffoldBackgroundColor: Colors.black,
+            scaffoldBackgroundColor: Color(0xFFA591E2),
             visualDensity: VisualDensity.adaptivePlatformDensity,
             brightness: Brightness.dark,
           ),
@@ -65,7 +65,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Treniruočių Sekimas')),
+      appBar: AppBar(title: Text('Treniruokis')),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 600;
@@ -127,16 +127,6 @@ class HistoryScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text('Istorija')),
       body: Center(child: Text('Progreso ir pastabų istorija')),
-    );
-  }
-}
-
-class StepsScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Žingsnių Sekimas')),
-      body: Center(child: Text('Žingsnių kiekio stebėjimas')),
     );
   }
 }

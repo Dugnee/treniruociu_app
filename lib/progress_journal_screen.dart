@@ -181,12 +181,14 @@ class _ProgressJournalScreenState extends State<ProgressJournalScreen> with Sing
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
+        backgroundColor: Color(0xFFA591E2),
         appBar: AppBar(title: Text('Progreso žurnalas')),
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
+      backgroundColor: Color(0xFFA591E2),
       appBar: AppBar(
         title: Text('Progreso žurnalas'),
         actions: [

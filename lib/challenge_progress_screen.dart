@@ -128,6 +128,7 @@ class _ChallengeProgressScreenState extends State<ChallengeProgressScreen> with 
     final progress = completed / widget.challenge['period'];
 
     return Scaffold(
+      backgroundColor: Color(0xFFA591E2),
       appBar: AppBar(
         title: Text(widget.challenge['name']),
       ),
