@@ -81,7 +81,7 @@ class HomeScreen extends StatelessWidget {
                   _buildCard(context, 'Treniruotės', Icons.fitness_center, WorkoutsScreen()),
                   _buildCard(context, 'Progreso žurnalas', Icons.history, ProgressJournalScreen()),
                   _buildCard(context, 'Žingsniai', Icons.directions_walk, StepsScreen()),
-                  _buildCard(context, 'Draugų iššūkiai', Icons.group, FriendsChallengesScreen()),
+                  _buildCard(context, 'BMI skaičiuoklė', Icons.monitor_weight, BMICalculatorScreen()),
                   _buildCard(context, 'Nustatymai', Icons.settings, SettingsScreen()),
                 ],
               ),
