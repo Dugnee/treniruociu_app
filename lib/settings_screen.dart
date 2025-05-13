@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'main.dart';
 import 'package:intl/intl.dart';
 
@@ -17,43 +21,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _photoUrl;
   User? _user;
   bool _isWeb = kIsWeb;
+  DateTime? _joinDate;
+  final _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     _user = FirebaseAuth.instance.currentUser;
     _photoUrl = _user?.photoURL;
-    _loadUserName();
+    _loadUserData();
   }
 
-  Future<void> _loadUserName() async {
+  Future<void> _loadUserData() async {
     if (_user == null) return;
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(_user!.uid).get();
-      if (doc.exists && doc.data() != null && doc.data()!['name'] != null) {
-        _nameController.text = doc.data()!['name'];
-      } else if (_user!.displayName != null && _user!.displayName!.isNotEmpty) {
-        _nameController.text = _user!.displayName!;
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        _nameController.text = data['name'] ?? _user!.displayName ?? '';
+        _joinDate = (data['joinDate'] as Timestamp?)?.toDate() ?? _user!.metadata.creationTime;
+        _photoUrl = data['photoUrl'] ?? _user!.photoURL;
       } else {
-        _nameController.text = '';
+        // If user document doesn't exist, create it
+        _joinDate = _user!.metadata.creationTime;
+        await FirebaseFirestore.instance.collection('users').doc(_user!.uid).set({
+          'name': _user!.displayName ?? '',
+          'email': _user!.email,
+          'joinDate': _joinDate,
+          'photoUrl': _user!.photoURL,
+        });
       }
       setState(() {});
     } catch (e) {
-      print('DEBUG: Klaida kraunant vartotojo vardą: $e');
-      setState(() {
-        _nameController.text = '';
+      print('DEBUG: Klaida kraunant vartotojo duomenis: $e');
+    }
+  }
+
+  Future<String?> _compressAndEncodeImage(File file) async {
+    try {
+      final result = await FlutterImageCompress.compressWithFile(
+        file.path,
+        minWidth: 200,
+        minHeight: 200,
+        quality: 85,
+      );
+      return base64Encode(result!);
+    } catch (e) {
+      print('Klaida suspaudžiant nuotrauką: $e');
+      return null;
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+      if (pickedFile == null) return;
+
+      setState(() => _saving = true);
+
+      // Compress and encode image
+      final base64Image = await _compressAndEncodeImage(File(pickedFile.path));
+      if (base64Image == null) {
+        throw Exception('Nepavyko apdoroti nuotraukos');
+      }
+
+      // Update Firestore
+      await FirebaseFirestore.instance.collection('users').doc(_user!.uid).update({
+        'photoUrl': 'data:image/jpeg;base64,$base64Image',
       });
+
+      setState(() {
+        _photoUrl = 'data:image/jpeg;base64,$base64Image';
+        _saving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Profilio nuotrauka atnaujinta!')),
+      );
+    } catch (e) {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Klaida įkeliant nuotrauką: $e')),
+      );
     }
   }
 
   Future<void> _saveUserName() async {
     if (_user == null) return;
     setState(() => _saving = true);
-    await FirebaseFirestore.instance.collection('users').doc(_user!.uid).set({
-      'name': _nameController.text.trim(),
-    }, SetOptions(merge: true));
-    setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vardas išsaugotas!')));
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(_user!.uid).update({
+        'name': _nameController.text.trim(),
+      });
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Vardas išsaugotas!')),
+      );
+    } catch (e) {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Klaida išsaugant vardą: $e')),
+      );
+    }
   }
 
   Widget _buildAchievements() {
@@ -134,14 +207,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Center(
                 child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 48,
-                      backgroundImage: (_photoUrl != null && _photoUrl!.isNotEmpty)
-                          ? NetworkImage(_photoUrl!)
-                          : null,
-                      child: (_photoUrl == null || _photoUrl!.isEmpty)
-                          ? Icon(Icons.person, size: 48)
-                          : null,
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundImage: (_photoUrl != null && _photoUrl!.isNotEmpty)
+                              ? _photoUrl!.startsWith('data:image')
+                                  ? MemoryImage(base64Decode(_photoUrl!.split(',')[1]))
+                                  : NetworkImage(_photoUrl!) as ImageProvider
+                              : null,
+                          child: (_photoUrl == null || _photoUrl!.isEmpty)
+                              ? Icon(Icons.person, size: 60)
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.purple,
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: Icon(Icons.camera_alt, color: Colors.white),
+                              onPressed: _pickAndUploadImage,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 16),
                     SizedBox(
@@ -156,10 +249,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ),
-                    if (_nameController.text.isEmpty)
+                    if (_joinDate != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8.0),
-                        child: Text('Vardas nerastas', style: TextStyle(color: Colors.red)),
+                        child: Text(
+                          'Prisijungė: ${DateFormat('yyyy-MM-dd').format(_joinDate!)}',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
                       ),
                     SizedBox(height: 8),
                     ElevatedButton(

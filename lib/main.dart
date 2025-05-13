@@ -140,13 +140,3 @@ class StepsScreen extends StatelessWidget {
     );
   }
 }
-
-class SettingsScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Nustatymai')),
-      body: Center(child: Text('Temos, profilis, priminimai')),
-    );
-  }
-}
