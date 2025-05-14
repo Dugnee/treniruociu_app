@@ -3,6 +3,195 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 
+class FriendsChallengesScreen extends StatefulWidget {
+  @override
+  State<FriendsChallengesScreen> createState() => _FriendsChallengesScreenState();
+}
+
+class _FriendsChallengesScreenState extends State<FriendsChallengesScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFFA591E2),
+      appBar: AppBar(title: Text('Draugų iššūkiai')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Draugų iššūkiai',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => BMICalculatorScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text('BMI skaičiuoklė'),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 24),
+            Expanded(
+              child: ListView(
+                children: [
+                  _buildChallengeCard(
+                    'Bėgimo iššūkis',
+                    'Nubėk 30 km per savaitę',
+                    Icons.directions_run,
+                    '3/7 dienų',
+                    0.43,
+                  ),
+                  _buildChallengeCard(
+                    'Pritūpimų iššūkis',
+                    '1000 pritūpimų per 10 dienų',
+                    Icons.fitness_center,
+                    '450/1000 pritūpimų',
+                    0.45,
+                  ),
+                  _buildChallengeCard(
+                    'Vandens iššūkis',
+                    'Gerk 2L vandens kasdien',
+                    Icons.local_drink,
+                    '5/10 dienų',
+                    0.5,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showNewChallengeDialog(context);
+        },
+        backgroundColor: Colors.purple,
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildChallengeCard(
+    String title,
+    String description,
+    IconData icon,
+    String progress,
+    double progressValue,
+  ) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 28, color: Colors.purple),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Icon(Icons.share, color: Colors.grey),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(description),
+            SizedBox(height: 12),
+            Text(
+              progress,
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: progressValue,
+              backgroundColor: Colors.grey[300],
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
+              minHeight: 10,
+              borderRadius: BorderRadius.circular(5),
+            ),
+            SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Dalyviai: Jonas, Tomas, Lina'),
+                TextButton(
+                  onPressed: () {},
+                  child: Text('Prisijungti'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.purple),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNewChallengeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Naujas iššūkis'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Pavadinimas',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Aprašymas',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Trukmė (dienomis)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Atšaukti'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+            child: Text('Sukurti'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class BMICalculatorScreen extends StatefulWidget {
   @override
   State<BMICalculatorScreen> createState() => _BMICalculatorScreenState();

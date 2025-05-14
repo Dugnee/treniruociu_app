@@ -8,6 +8,8 @@ import 'settings_screen.dart';
 import 'steps_screen.dart';
 import 'friends_challenges_screen.dart';
 import 'progress_journal_screen.dart';
+import 'workout_generator_screen.dart';
+import 'my_plans_screen.dart';
 
 final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
 
@@ -79,9 +81,11 @@ class HomeScreen extends StatelessWidget {
                 mainAxisSpacing: 16,
                 children: [
                   _buildCard(context, 'Treniruotės', Icons.fitness_center, WorkoutsScreen()),
+                  _buildCard(context, 'Programos generatorius', Icons.smart_toy, WorkoutGeneratorScreen()),
+                  _buildCard(context, 'Mano planai', Icons.list_alt, MyPlansScreen()),
                   _buildCard(context, 'Progreso žurnalas', Icons.history, ProgressJournalScreen()),
                   _buildCard(context, 'Žingsniai', Icons.directions_walk, StepsScreen()),
-                  _buildCard(context, 'BMI skaičiuoklė', Icons.monitor_weight, BMICalculatorScreen()),
+                  _buildCard(context, 'Draugų iššūkiai', Icons.people, FriendsChallengesScreen()),
                   _buildCard(context, 'Nustatymai', Icons.settings, SettingsScreen()),
                 ],
               ),
