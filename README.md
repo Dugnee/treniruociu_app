@@ -1,6 +1,6 @@
 # treniruociu_app
 
-A new Flutter project.
+An app for creating your individual gym exercises.
 
 ## Getting Started
 
